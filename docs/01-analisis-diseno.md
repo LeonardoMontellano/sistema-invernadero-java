@@ -373,3 +373,58 @@ sensor ni lo mete en la jerarquía.
   que se active o desactive.
 - `Invernadero` solo coordina: guarda, recorre y decide, sin meterse en los detalles de
   cada medición.
+
+---
+
+# Fase 3. Constructores, herencia y sobrescritura
+
+## Constructores
+
+### ¿Los constructores de la superclase se heredan?
+
+No. Cada subclase tiene su propio constructor
+y, si no lo escribiera, el compilador intentaría generar uno que llame a `super()` sin
+argumentos. Como `Sensor` no tiene ese constructor vacío, ahí fallaría. Por eso
+`SensorTemperatura`, `SensorHumedadAmbiental` y `SensorHumedadSuelo` definen su
+constructor y llaman a `super(id, ubicacion)`.
+
+### Cuando creas un objeto de una subclase, ¿qué constructor se ejecuta primero?
+
+Primero se ejecuta el constructor de la superclase y después el de la subclase. Al
+hacer `new SensorTemperatura(...)` corre `Sensor(id, ubicacion)` y, cuando termina,
+sigue el cuerpo de `SensorTemperatura`. La cadena arranca en `Object` y baja.
+
+### ¿Para qué utilizaste `super(...)`?
+
+Para pasar `id` y `ubicacion` al constructor de `Sensor` y que sea él quien inicialice
+sus atributos privados: `id`, `ubicacion`, `activo` y `ultimaLectura`. La subclase no
+puede tocar esos atributos directamente porque son `private`.
+
+## Sobrescritura
+
+### ¿Qué método sobrescribiste?
+
+En las tres subclases sobrescribí `getNombreVariable()`, `getUnidad()` e
+`interpretarLectura()`. Esta última está declarada como abstracta en `Sensor`; las
+otras dos también se resuelven distinto en cada tipo.
+
+### ¿Qué indica `@Override`?
+
+Que el método pretende sobrescribir o implementar uno de la superclase. El compilador
+lo verifica: si el nombre o los parámetros no coinciden, marca error. También deja
+clara la intención para quien lee el código.
+
+### ¿Por qué utilizaste el mismo nombre de método en las diferentes subclases?
+
+Porque las tres responden al mismo contrato: "dime tu nombre de variable", "dime
+tu unidad" e "interpreta tu lectura". Cambia lo que devuelven, no el mensaje. Eso
+permite guardarlas en una `List<Sensor>` y tratarlas de forma uniforme.
+
+### ¿Qué ventaja tiene esto frente a crear un método completamente diferente para cada tipo de sensor?
+
+Evita que `Invernadero` pregunte de qué tipo es cada sensor y llame a
+`interpretarTemperatura()`, `interpretarHumedadAmbiental()`, etc. En
+`lecturaGeneral()` alcanza con recorrer la lista y llamar a
+`sensor.interpretarLectura()`: cada objeto resuelve su propia versión. Si mañana se
+agrega otro tipo de sensor, el recorrido no cambia. Es polimorfismo y menos
+`instanceof` o `switch`.
