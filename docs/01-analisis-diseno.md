@@ -428,3 +428,83 @@ Evita que `Invernadero` pregunte de qué tipo es cada sensor y llame a
 `sensor.interpretarLectura()`: cada objeto resuelve su propia versión. Si mañana se
 agrega otro tipo de sensor, el recorrido no cambia. Es polimorfismo y menos
 `instanceof` o `switch`.
+
+---
+
+# Fase 4.
+
+## Tabla de ejecución
+
+| Tipo de referencia | Tipo real del objeto | Método que se ejecuta |
+|---|---|---|
+| `Sensor` | `SensorTemperatura` | `interpretarLectura()` de `SensorTemperatura` |
+| `Sensor` | `SensorHumedadAmbiental` | `interpretarLectura()` de `SensorHumedadAmbiental` |
+| `Sensor` | `SensorHumedadSuelo` | `interpretarLectura()` de `SensorHumedadSuelo` |
+
+Ejemplo con el código del proyecto:
+
+```text
+Sensor sensor = new SensorHumedadSuelo("SH-01", "Sector A");
+sensor.registrarLectura(25.0);
+System.out.println(sensor.interpretarLectura()); // "Baja"
+```
+
+La variable dice `Sensor`, pero el objeto es un `SensorHumedadSuelo`. Se ejecuta la
+versión del objeto real.
+
+## ¿Por qué una referencia de tipo `Sensor` puede apuntar a un objeto `SensorTemperatura`?
+
+Porque `SensorTemperatura` **es un** `Sensor`. La subclase hereda la parte común y
+cumple el contrato de la superclase, así que Java acepta la asignación sin cast:
+
+```text
+Sensor sensor = new SensorTemperatura("ST-01", "Sector A");
+```
+
+## ¿Puede una referencia `SensorTemperatura` apuntar directamente a cualquier objeto `Sensor`?
+
+No. Solo puede apuntar a un objeto que realmente sea `SensorTemperatura` (o una
+subclase suya). El compilador exige un cast explícito para bajar en la jerarquía:
+
+```text
+Sensor sensor = new SensorTemperatura("ST-01", "Sector A");
+SensorTemperatura temp = (SensorTemperatura) sensor; // funciona
+```
+
+Si el objeto real fuera un `SensorHumedadSuelo`, ese cast compila, pero falla en
+ejecución con `ClassCastException`, porque no todo `Sensor` es un
+`SensorTemperatura`.
+
+## Cuando ejecutas `sensor.interpretarLectura()`, ¿qué versión del método se ejecuta?
+
+La del objeto real. Si `sensor` apunta a un `SensorHumedadAmbiental`, corre la
+implementación de `SensorHumedadAmbiental`, aunque la variable esté declarada como
+`Sensor`. No importa el tipo de la referencia para elegir el método, solo para saber
+qué métodos se pueden llamar en tiempo de compilación.
+
+## ¿Cómo determina Java cuál implementación utilizar?
+
+Con enlace dinámico: en ejecución, la JVM mira la clase real del objeto y busca allí la
+implementación del método. La decisión no se toma con el tipo de la variable, por eso
+se llama enlace tardío. Si la subclase no lo sobrescribe, usa el de la superclase.
+
+## ¿Dónde puedes observar el polimorfismo?
+
+En `Invernadero.lecturaGeneral()`. Recorre una `List<Sensor>` y llama a los mismos
+métodos para todos:
+
+```text
+sensor.getNombreVariable()
+sensor.getUnidad()
+sensor.interpretarLectura()
+```
+
+Cada objeto responde con su propia versión: la temperatura devuelve `"°C"`, las
+humedades devuelven `"%"`, y cada una interpreta con sus umbrales. Misma llamada,
+distinto comportamiento.
+
+## ¿Dónde puedes observar el enlace dinámico?
+
+En esa misma llamada a `sensor.interpretarLectura()` dentro del `for`. El código fuente
+no sabe si el próximo sensor es de temperatura, ambiental o suelo; la JVM lo resuelve
+en cada iteración según el objeto que toque. Ahí se ve el enlace dinámico en acción.
