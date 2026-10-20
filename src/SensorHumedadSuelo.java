@@ -19,4 +19,7 @@ public class SensorHumedadSuelo extends Sensor{
         if (getUltimaLectura() <= UMBRAL_MAX) return "Adecuada";
         return "Alta";
     }
+    public boolean pideRiego() {
+        return isActivo() && getUltimaLectura() < UMBRAL_MIN;
+    }
 }

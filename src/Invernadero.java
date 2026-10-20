@@ -29,7 +29,14 @@ public class Invernadero {
         }
         return texto.toString();
     }
-    public void decidirRiego(){}
+    public void decidirRiego(){
+        SensorHumedadSuelo sensorSuelo = buscarSensorSuelo();
+        if (sensorSuelo != null && sensorSuelo.pideRiego()) {
+            riego.activar();
+        } else {
+            riego.desactivar();
+        }
+    }
     public Boolean isRiegoActivo(){return this.riego.isActivo();}
     private SensorHumedadSuelo buscarSensorSuelo(){
         for (Sensor sensor : sensores) {
