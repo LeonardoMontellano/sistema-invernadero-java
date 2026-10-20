@@ -229,3 +229,147 @@ conviene meter en la misma clase. Lo único que hace es pasar agua o dejarla de 
 que cabe en un dato y en las acciones de activarlo y desactivarlo. La relación que sí
 tiene sentido es que el invernadero use la lectura de la humedad del suelo para
 decidir si activa el riego: ahí hay colaboración, no herencia.
+
+# 2. Diseño orientado a objetos y UML
+
+Todavía sin implementar: acá solo queda la propuesta de clases, sus relaciones y el
+diagrama. La idea es pasar de los objetos identificados en la fase anterior a clases
+con atributos, constructores y métodos concretos.
+
+## 1. Diseño de clases
+
+| Clase | Atributos propuestos | Tipo de dato | Métodos propuestos | Responsabilidad |
+|---|---|---|---|---|
+| **Sensor** *(abstracta)* | `- id`<br>`- ubicacion`<br>`- activo`<br>`- ultimaLectura` | `String`<br>`String`<br>`boolean`<br>`double` | `+ Sensor(id: String, ubicacion: String)`<br>`+ getId(): String`<br>`+ getUbicacion(): String`<br>`+ isActivo(): boolean`<br>`+ activar(): void`<br>`+ desactivar(): void`<br>`+ registrarLectura(valor: double): void`<br>`+ getUltimaLectura(): double`<br>`+ getNombreVariable(): String`<br>`+ getUnidad(): String`<br>`+ interpretarLectura(): String` | Guardar lo común a todo sensor y definir el contrato que cada tipo debe completar. |
+| **SensorTemperatura** | `- UMBRAL_MIN = 18.0`<br>`- UMBRAL_MAX = 30.0` | `double`<br>`double` | `+ SensorTemperatura(id: String, ubicacion: String)`<br>`+ getNombreVariable(): String`<br>`+ getUnidad(): String`<br>`+ interpretarLectura(): String` | Interpretar la lectura en grados Celsius usando sus propios umbrales. |
+| **SensorHumedadAmbiental** | `- UMBRAL_MIN = 40.0`<br>`- UMBRAL_MAX = 70.0` | `double`<br>`double` | `+ SensorHumedadAmbiental(id: String, ubicacion: String)`<br>`+ getNombreVariable(): String`<br>`+ getUnidad(): String`<br>`+ interpretarLectura(): String` | Interpretar la humedad del aire como porcentaje y clasificarla. |
+| **SensorHumedadSuelo** | `- UMBRAL_MIN = 30.0`<br>`- UMBRAL_MAX = 70.0` | `double`<br>`double` | `+ SensorHumedadSuelo(id: String, ubicacion: String)`<br>`+ getNombreVariable(): String`<br>`+ getUnidad(): String`<br>`+ interpretarLectura(): String`<br>`+ pideRiego(): boolean` | Interpretar la humedad del suelo y decir si su lectura requiere riego. |
+| **SistemaRiego** | `- activo` | `boolean` | `+ SistemaRiego()`<br>`+ activar(): void`<br>`+ desactivar(): void`<br>`+ isActivo(): boolean` | Representar el riego y controlar si está encendido o apagado. |
+| **Invernadero** | `- nombre`<br>`- sensores`<br>`- riego` | `String`<br>`List<Sensor>`<br>`SistemaRiego` | `+ Invernadero(nombre: String)`<br>`+ agregarSensor(sensor: Sensor): void`<br>`+ getSensores(): List<Sensor>`<br>`+ lecturaGeneral(): String`<br>`+ decidirRiego(): void`<br>`+ isRiegoActivo(): boolean`<br>`- buscarSensorSuelo(): SensorHumedadSuelo` | Coordinar los sensores y el riego, y dar una lectura general del cultivo. |
+
+Criterios que se aplicaron en la tabla:
+
+- Todos los atributos son `private`. Lo que otras clases necesitan se obtiene con
+  getters; nadie modifica una lectura o un estado "por fuera".
+- Los constructores reciben solo los datos que no se pueden calcular: identificación,
+  ubicación y nombre. El estado inicial (`activo = false`, `ultimaLectura = 0.0`,
+  riego apagado y lista vacía) lo define la propia clase.
+- `getNombreVariable()`, `getUnidad()` e `interpretarLectura()` se declaran en `Sensor`
+  y cada subclase las resuelve. En `Sensor` quedan como métodos abstractos.
+- Los umbrales son constantes de cada subclase, no datos que se pasen por constructor:
+  no son configurables en este alcance.
+
+## 2. Jerarquía de clases
+
+La jerarquía queda así:
+
+```text
+Sensor (abstracta)
+├── SensorTemperatura
+├── SensorHumedadAmbiental
+└── SensorHumedadSuelo
+```
+
+`Sensor` es la superclase porque concentra lo que los tres comparten: identidad,
+ubicación, estado de encendido, última lectura y las operaciones para manejarlos.
+
+Cada subclase aporta solo lo que cambia:
+
+- **SensorTemperatura**: umbrales de temperatura, unidad `°C` y nombre de variable.
+- **SensorHumedadAmbiental**: umbrales de humedad del aire, unidad `%` y nombre de
+  variable.
+- **SensorHumedadSuelo**: umbrales de humedad del suelo, unidad `%`, nombre de variable
+  y `pideRiego()`.
+
+`SistemaRiego` e `Invernadero` no forman parte de esa jerarquía. No son sensores:
+colaboran con ellos. El invernadero contiene una lista de sensores y un sistema de
+riego; el riego solo recibe órdenes de activación y desactivación.
+
+En resumen:
+
+- **Herencia ("es un")**: `SensorTemperatura` es un `Sensor`.
+- **Composición ("tiene un")**: `Invernadero` tiene sensores y tiene un
+  `SistemaRiego`.
+- **Colaboración**: `Invernadero` usa `pideRiego()` de la humedad del suelo para
+  decidir, pero no interpreta umbrales por su cuenta.
+
+## 3. Diagrama UML inicial
+
+![Diagrama UML inicial](uml-inicial.png)
+
+## 4. Justificación del diseño
+
+### ¿Por qué propusiste esas clases?
+
+Porque cada una agrupa datos y comportamiento que cambian juntos. `Sensor` evita
+repetir lo que los tres sensores hacen igual; las tres subclases representan lo que
+realmente cambia; `SistemaRiego` tiene estado y operaciones propias; e `Invernadero`
+es el punto donde todo se coordina.
+
+### ¿Cuál es la responsabilidad principal de cada una?
+
+- `Sensor`: guardar los datos comunes y definir las operaciones que todo sensor debe
+  saber hacer.
+- `SensorTemperatura`, `SensorHumedadAmbiental` y `SensorHumedadSuelo`: interpretar su
+  propia lectura con sus umbrales. La del suelo además dice si hay que regar.
+- `SistemaRiego`: mantener y cambiar el estado del riego.
+- `Invernadero`: contener los sensores, mostrar la lectura general y decidir el riego.
+
+### ¿Por qué determinados atributos serán private?
+
+Para que el estado no se modifique de cualquier manera. Si `ultimaLectura` fuera
+público, cualquier clase podría escribir un valor sin pasar por `registrarLectura()`.
+Con `private`, los cambios pasan por los métodos y las reglas quedan en un solo lugar.
+Lo mismo aplica a `activo` y al estado del riego.
+
+### ¿Qué información proporcionarás mediante los constructores?
+
+`Sensor(id, ubicacion)` recibe la identificación y la ubicación, que son datos propios
+de cada instancia. Las subclases reciben lo mismo y delegan en `super(...)`.
+`Invernadero(nombre)` recibe su nombre y crea internamente la lista vacía y su
+`SistemaRiego`. `SistemaRiego()` no necesita parámetros porque arranca apagado.
+
+### ¿Cuál será la superclase y cuáles las subclases?
+
+La superclase es `Sensor`. Las subclases son `SensorTemperatura`,
+`SensorHumedadAmbiental` y `SensorHumedadSuelo`.
+
+### ¿Por qué existe una relación “es un” entre ellas?
+
+Porque un sensor de temperatura **es un** sensor: puede identificarse, ubicarse,
+encenderse, apagarse, registrar una lectura e interpretarla igual que cualquier otro.
+Lo mismo pasa con los otros dos. Gracias a eso, `Invernadero` puede guardarlos en una
+`List<Sensor>` y tratarlos de forma uniforme sin preguntar de qué tipo son.
+
+### ¿Qué información o comportamiento decidiste colocar en la superclase?
+
+Los atributos `id`, `ubicacion`, `activo` y `ultimaLectura`; el constructor; los getters;
+`activar()`, `desactivar()` y `registrarLectura()`; y la firma de `getNombreVariable()`,
+`getUnidad()` e `interpretarLectura()`.
+
+### ¿Qué elementos permanecerán en las subclases?
+
+Los umbrales concretos, la unidad, el nombre de la variable y la implementación de
+`interpretarLectura()`. En `SensorHumedadSuelo` queda además `pideRiego()`, porque esa
+decisión solo tiene sentido para ese sensor.
+
+### ¿Por qué SistemaRiego no pertenece a la jerarquía de sensores?
+
+Porque no mide nada. No tiene identificación de sensor, ni ubicación, ni lectura, ni
+sentido encenderlo para "medir". Su trabajo es ejecutar: abrir o cerrar el paso de
+agua. Si heredara de `Sensor`, arrastraría atributos y métodos que no usa. La relación
+correcta es de composición: el invernadero tiene un sistema de riego y lo controla.
+
+En la Fase 1 el riego aparecía como un dato dentro del invernadero. Al pasar a clases
+le doy una clase propia porque tiene estado y operaciones; eso no lo convierte en
+sensor ni lo mete en la jerarquía.
+
+### ¿Qué decisiones tomaste para evitar duplicar responsabilidades?
+
+- Lo común de los sensores quedó una sola vez en `Sensor`.
+- Cada sensor interpreta su lectura; el invernadero no repite umbrales.
+- `pideRiego()` usa la lectura y el umbral del propio sensor de suelo.
+- El estado del riego vive solo en `SistemaRiego`; `Invernadero` lo consulta y le pide
+  que se active o desactive.
+- `Invernadero` solo coordina: guarda, recorre y decide, sin meterse en los detalles de
+  cada medición.
