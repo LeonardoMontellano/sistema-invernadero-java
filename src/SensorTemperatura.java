@@ -6,14 +6,17 @@ public class SensorTemperatura extends Sensor{
     }
     @Override
     public String getNombreVariable() {
-        return "";
+        return "Temperatura";
     }
     @Override
     public String getUnidad() {
-        return "";
+        return "°C";
     }
     @Override
     public String interpretarLectura() {
-        return "";
+        if (!isActivo()) return "Sin datos (sensor apagado)";
+        if (getUltimaLectura() < UMBRAL_MIN) return "Baja";
+        if (getUltimaLectura() <= UMBRAL_MAX) return "Adecuada";
+        return "Alta";
     }
 }

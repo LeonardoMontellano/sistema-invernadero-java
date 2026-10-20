@@ -4,19 +4,19 @@ public class SensorHumedadAmbiental extends Sensor {
     public SensorHumedadAmbiental(String id, String ubicacion) {
         super(id, ubicacion);
     }
-
     @Override
     public String getNombreVariable() {
-        return "";
+        return "Humedad ambiental";
     }
-
     @Override
     public String getUnidad() {
-        return "";
+        return "%";
     }
-
     @Override
     public String interpretarLectura() {
-        return "";
+        if (!isActivo()) return "Sin datos (sensor apagado)";
+        if (getUltimaLectura() < UMBRAL_MIN) return "Baja";
+        if (getUltimaLectura() <= UMBRAL_MAX) return "Adecuada";
+        return "Alta";
     }
 }

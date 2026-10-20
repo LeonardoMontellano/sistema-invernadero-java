@@ -6,14 +6,17 @@ public class SensorHumedadSuelo extends Sensor{
     }
     @Override
     public String getNombreVariable() {
-        return "";
+        return "Humedad del suelo";
     }
     @Override
     public String getUnidad() {
-        return "";
+        return "%";
     }
     @Override
     public String interpretarLectura() {
-        return "";
+        if (!isActivo()) return "Sin datos (sensor apagado)";
+        if (getUltimaLectura() < UMBRAL_MIN) return "Baja";
+        if (getUltimaLectura() <= UMBRAL_MAX) return "Adecuada";
+        return "Alta";
     }
 }
